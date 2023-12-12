@@ -1,0 +1,103 @@
+import pandas as pd #Biblioteca para tratamento e análise de dados
+import os #bibliteca para manipular arquivos
+
+#Importação dos dataset's
+DIR = 'C:\\Users\\Administrador\\Documents\\FILES\\PROGRAMAÇÃO\\BOOTCAMP - XP EDUCAÇÃO\\ARQUITETO DE BIG DATA\\02 - COLETA DE DADOS\\BD'
+
+ARQ1 = 'livros.csv'
+ARQ2 = 'emprestimos_biblioteca.csv'
+ARQ3 = 'clientes_biblioteca.csv'
+arquivo1 = os.path.join(DIR,ARQ1)
+
+livros = pd.read_csv(arquivo1, sep=',',encoding='latin-1')
+
+livros.head(5)
+arquivo2 = os.path.join(DIR,ARQ2)
+
+emprestimos = pd.read_csv(arquivo2,sep='|',encoding='latin-1')
+emprestimos.head(5)
+arquivo3 = os.path.join(DIR,ARQ3)
+clientes = pd.read_csv(arquivo3,sep=';',encoding='latin-1')
+clientes.head(5)
+
+#Análise das tabelas
+livros.describe()
+livros_nulos = livros.isnull().sum()
+livros_nulos
+emprestimos.describe()
+emprestimos_nulos = emprestimos.isnull().sum()
+emprestimos_nulos
+clientes.describe()
+clientes_nulos = clientes.isnull().sum()
+
+clientes_nulos
+
+#Junção de tabelas
+liv_emp =  pd.merge(livros, emprestimos, on='Cod_Livro', how='inner')
+
+db_completa = pd.merge(liv_emp, clientes, on='Cod_Cliente', how='inner')
+
+db_completa.head(5)
+tipos_de_dados = db_completa.dtypes
+
+print(tipos_de_dados)
+
+#Converter tipo da coluna para data
+db_completa['Data_Emprestimo'] = pd.to_datetime(db_completa['Data_Emprestimo'])
+db_completa['Data_Devolucao'] = pd.to_datetime(db_completa['Data_Devolucao'])
+
+tipos_de_dados = db_completa.dtypes
+
+print(tipos_de_dados)
+db_completa.head(5)
+
+#Calcular a idade média do público masculino que pegou livros à partir do dia 01/06/2023
+filtro = (db_completa['Data_Emprestimo'] >= '2023-06-01')&(db_completa['Gênero'] =='Masculino')
+
+idade_filtrada = db_completa[filtro]
+
+idade_filtrada.describe()
+
+#O livro que foi emprestado por mais vezes
+db_completa.groupby('Título')['Cod_Cliente'].nunique().sort_values(ascending=False)
+
+#O Autor que produziu mais livros
+db_completa.groupby('Autor')['Título'].nunique().sort_values(ascending=False)
+
+#O livro mais emprestado pelo público feminino que possui ensino superior
+filtro = (db_completa['Gênero'] == 'Feminino')&(db_completa['Escolaridade'] == 'Ensino Superior')
+
+fem_df = db_completa[filtro]
+
+fem_df.head(5)
+
+fem_df.groupby('Título')['Cod_Cliente'].nunique().sort_values(ascending=False)
+
+#Editora com maior representação de livros na biblioteca
+db_completa.groupby('Editora')['Cod_Livro'].nunique().sort_values(ascending=False)
+
+#Ano que lançou mais livros
+db_completa.groupby('Ano_Publicacao')['Título'].nunique().sort_values(ascending=False)
+
+#Incluir uma coluna com o mês extraido da Data_Emprestimo
+
+db_completa['Mes_Emprestimo'] = db_completa['Data_Emprestimo'].dt.month
+
+db_completa.head(5)
+
+#Mês do ano com maior número de empréstimos
+db_completa.groupby('Mes_Emprestimo').size().sort_values(ascending=False)
+
+#Cliente com maior número de empréstimos
+db_completa.groupby('Nome')['Cod_Livro'].nunique().sort_values(ascending=False)
+
+#Soma de idade dos clientes de sexo Masculino que realizaram empréstimo de livros nos meses de Junho e Julho
+filtro = (db_completa['Gênero'] == 'Masculino')&(db_completa['Mes_Emprestimo'] == 6)|(db_completa['Mes_Emprestimo'] == 7)
+
+masc_db = db_completa[filtro]
+
+soma = masc_db['Idade'].sum()
+
+print(soma)
+masc_db.describe()
+
